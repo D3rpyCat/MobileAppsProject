@@ -10,11 +10,12 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.PopupMenu;
+import android.support.v7.widget.SearchView;
 import android.widget.Toast;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
 
     private RecyclerView moviesList;
     private MoviesAdapter adapter;
@@ -47,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_movies, menu);
+        MenuItem menuItem = menu.findItem(R.id.search);
+        SearchView searchView = (SearchView) menuItem.getActionView();
+        searchView.setOnQueryTextListener(this);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -155,6 +159,34 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void getMovies(int page, String title) {
+        isFetchingMovies = true;
+        moviesRepository.getMovies(title, page, new OnGetMoviesCallback() {
+            @Override
+            public void onSuccess(int page, List<Movie> movies) {
+                Log.d("MoviesRepository", "Current Page = " + page);
+                if (adapter == null) {
+                    adapter = new MoviesAdapter(movies, movieGenres, callback);
+                    moviesList.setAdapter(adapter);
+                } else {
+                    if (page == 1) {
+                        adapter.clearMovies();
+                    }
+                    adapter.appendMovies(movies);
+                }
+                currentPage = page;
+                isFetchingMovies = false;
+
+                setTitle();
+            }
+
+            @Override
+            public void onError() {
+                showError();
+            }
+        });
+    }
+
     OnMoviesClickCallback callback = new OnMoviesClickCallback() {
         @Override
         public void onClick(Movie movie) {
@@ -180,5 +212,24 @@ public class MainActivity extends AppCompatActivity {
 
     private void showError() {
         Toast.makeText(MainActivity.this, "Please check your internet connection.", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        String userInput = newText.toLowerCase();
+        if(!userInput.equals("")){
+            getMovies(1,userInput);
+            adapter.updateList();
+        }
+        else{
+            getMovies(1);
+            adapter.updateList();
+        }
+        return true;
     }
 }

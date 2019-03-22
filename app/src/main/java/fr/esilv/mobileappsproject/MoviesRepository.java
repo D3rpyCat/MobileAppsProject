@@ -78,6 +78,30 @@ public class MoviesRepository {
         }
     }
 
+    public void getMovies(String title, int page,  final OnGetMoviesCallback callback) {
+        Callback<MoviesResponse> call = new Callback<MoviesResponse>() {
+            @Override
+            public void onResponse(Call<MoviesResponse> call, Response<MoviesResponse> response) {
+                if (response.isSuccessful()) {
+                    MoviesResponse moviesResponse = response.body();
+                    if (moviesResponse != null && moviesResponse.getMovies() != null) {
+                        callback.onSuccess(moviesResponse.getPage(), moviesResponse.getMovies());
+                    } else {
+                        callback.onError();
+                    }
+                } else {
+                    callback.onError();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<MoviesResponse> call, Throwable t) {
+                callback.onError();
+            }
+        };
+        api.getMovieByName("045b2bb465b354f6ca6c86a080b3794d",LANGUAGE,title,page).enqueue(call);
+    }
+
     public void getGenres(final OnGetGenresCallback callback) {
         api.getGenres("045b2bb465b354f6ca6c86a080b3794d", LANGUAGE)
                 .enqueue(new Callback<GenresResponse>() {
